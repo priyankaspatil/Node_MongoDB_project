@@ -1,13 +1,13 @@
 var passport = require('passport');
-var localStrategy = require('passport-local').Strategy;
+var LocalStrategy = require('passport-local').Strategy;
 var User = require('./models/user');
-var jwtStrategy = require('passport-jwt').Strategy;
+var JwtStrategy = require('passport-jwt').Strategy;
 var ExtractJwt = require('passport-jwt').ExtractJwt;
 var jwt = require('jsonwebtoken');
 
 var config = require('./config');
 
-exports.local = passport.use(new localStrategy(User.authenticate()));
+exports.local = passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
@@ -20,7 +20,7 @@ var opts = {};
 opts.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
 opts.secretOrKey = config.secretKey;
 
-exports.jwtPassport = passport.use(new jwtStrategy(opts, 
+exports.jwtPassport = passport.use(new JwtStrategy(opts, 
     (jwt_payload, done) => {
         console.log("JWT Payload", jwt_payload);
         User.findOne({_id: jwt_payload._id}, (err, user) => {
@@ -36,4 +36,19 @@ exports.jwtPassport = passport.use(new jwtStrategy(opts,
         });
     }));
 
-exports.verifyUser =passport.authenticate('jwt', {session: false});
+exports.verifyUser = passport.authenticate('jwt', {session: false});
+exports.verifyAdmin = (req, res) => {
+    console.log("verifyAdmin function!!");
+    console.log("VerifyAdmin req ==> ", req);
+    console.log("VerifyAdmin res ==> ", res);
+    if(req.user.admin != true) {
+        err = new Error('You are not authorized to perform this operation!')
+        err.status = 403;
+        return next(err);
+    }
+    else {
+        res.statusCode = 200;
+        res.setHeader('Content-Type','application/json');
+        next();
+    }
+};
